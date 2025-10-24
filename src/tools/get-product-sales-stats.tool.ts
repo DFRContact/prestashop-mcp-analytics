@@ -9,6 +9,7 @@ import {
   formatProductSalesStatsJson,
   formatProductSalesStatsMarkdown,
 } from '../formatters/index.js';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 export async function getProductSalesStatsTool(
   ordersService: OrdersService,
@@ -78,7 +79,7 @@ Error Handling:
   - Returns truncation warning if response > 25,000 characters
 
 Note: This is a READ-ONLY tool. It does not modify any data.`,
-  inputSchema: ProductSalesStatsInputSchema,
+  inputSchema: zodToJsonSchema(ProductSalesStatsInputSchema, 'ProductSalesStatsInput'),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

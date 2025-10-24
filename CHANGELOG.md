@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2025-01-24
+
+### Fixed
+- **Tool Schemas**: Convert Zod schemas to JSON Schema for MCP client compatibility
+  - Fixes tools not appearing in Claude Desktop (gray toggle issue)
+  - Add `zod-to-json-schema` dependency for proper schema conversion
+  - Clients now receive valid JSON Schema instead of Zod internal objects
+  - Enables tool visibility and activation in Claude Desktop
+
 ## [1.1.2] - 2025-01-24
 
 ### Fixed
