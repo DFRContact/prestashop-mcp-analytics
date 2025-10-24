@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import { config as dotenvConfig } from 'dotenv';
+
+// Load .env file
+dotenvConfig();
 
 const envSchema = z.object({
   PRESTASHOP_BASE_URL: z.string().url(),
