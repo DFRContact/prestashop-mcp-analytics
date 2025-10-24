@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-01-24
+
 ### Performance
 - **Parallel Batch Processing**: Implement concurrent API request batching for significant performance gains
   - Replace sequential batch processing with parallel execution (max 5 concurrent requests)

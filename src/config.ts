@@ -34,7 +34,7 @@ export const config = {
   },
   mcp: {
     name: 'prestashop-mcp-analytics',
-    version: '1.1.5',
+    version: '1.2.0',
   },
   limits: {
     characterLimit: 25000,
