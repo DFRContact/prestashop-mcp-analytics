@@ -1,17 +1,20 @@
 import { PrestashopApiService } from './prestashop-api.service.js';
-import { ProductSalesStats, TopProduct, OrderSummary } from '../types.js';
+import { ProductSalesStats, TopProduct, OrderSummary, PrestashopOrderDetail, PrestashopProduct } from '../types.js';
 import { validateDateRange } from '../utils/date.utils.js';
+import { safeParseFloat } from '../utils/validation.utils.js';
 
 export class OrdersService {
   constructor(private apiService: PrestashopApiService) {}
 
   /**
    * Agrège les statistiques de vente pour un produit
+   * OPTIMISÉ: Filtre les commandes par date d'abord, puis récupère les order_details
    */
   async getProductSalesStats(
     productId: number,
     dateFrom: string,
-    dateTo: string
+    dateTo: string,
+    orderStates?: number[]
   ): Promise<ProductSalesStats> {
     // 1. Validation
     validateDateRange(dateFrom, dateTo);
@@ -19,18 +22,34 @@ export class OrdersService {
     // 2. Récupérer le produit
     const product = await this.apiService.getProduct(productId);
 
-    // 3. Récupérer tous les order_details pour ce produit
-    const allOrderDetails = await this.apiService.getAllOrderDetails({
-      product_id: productId,
+    // 3. Récupérer SEULEMENT les commandes de la période (OPTIMISATION)
+    const orders = await this.apiService.getAllOrders({
+      date_add: `[${dateFrom},${dateTo}]`,
+      current_state: orderStates,
     });
 
-    // 4. Filtrer par date (API PrestaShop ne supporte pas filter date sur order_details)
-    const from = new Date(dateFrom);
-    const to = new Date(dateTo);
-    const filteredDetails = allOrderDetails.filter((detail) => {
-      const orderDate = new Date(detail.date_add);
-      return orderDate >= from && orderDate <= to;
-    });
+    if (orders.length === 0) {
+      // Aucune commande dans la période - retour rapide
+      return this.buildEmptyStats(productId, product, dateFrom, dateTo);
+    }
+
+    // 4. Récupérer les order_details pour ce produit dans ces commandes
+    const orderIds = orders.map((o) => o.id);
+    const allDetails: PrestashopOrderDetail[] = [];
+
+    // Traiter par batch de 20 commandes (évite les URLs trop longues)
+    const batchSize = 20;
+    for (let i = 0; i < orderIds.length; i += batchSize) {
+      const batch = orderIds.slice(i, i + batchSize);
+      const orderFilter = `[${batch.join('|')}]`; // Opérateur OR de PrestaShop
+
+      const details = await this.apiService.getAllOrderDetails({
+        id_order: orderFilter,
+        product_id: productId,
+      });
+
+      allDetails.push(...details);
+    }
 
     // 5. Agréger les stats
     let totalQuantity = 0;
@@ -38,29 +57,29 @@ export class OrdersService {
     let totalRevenueIncl = 0;
     const orderMap = new Map<number, OrderSummary>();
 
-    for (const detail of filteredDetails) {
+    for (const detail of allDetails) {
       totalQuantity += detail.product_quantity;
-      totalRevenueExcl += Number(detail.total_price_tax_excl);
-      totalRevenueIncl += Number(detail.total_price_tax_incl);
+      totalRevenueExcl += safeParseFloat(detail.total_price_tax_excl, 'total_price_tax_excl');
+      totalRevenueIncl += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
 
       if (!orderMap.has(detail.id_order)) {
         orderMap.set(detail.id_order, {
           order_id: detail.id_order,
           date: detail.date_add,
           quantity: detail.product_quantity,
-          unit_price: Number(detail.unit_price_tax_incl),
-          total_price: Number(detail.total_price_tax_incl),
+          unit_price: safeParseFloat(detail.unit_price_tax_incl, 'unit_price_tax_incl'),
+          total_price: safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl'),
         });
       } else {
         const existing = orderMap.get(detail.id_order);
         if (existing) {
           existing.quantity += detail.product_quantity;
-          existing.total_price += Number(detail.total_price_tax_incl);
+          existing.total_price += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
         }
       }
     }
 
-    const orders = Array.from(orderMap.values()).sort(
+    const ordersList = Array.from(orderMap.values()).sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
@@ -86,36 +105,90 @@ export class OrdersService {
         total_revenue_incl_tax: totalRevenueIncl,
         average_unit_price:
           totalQuantity > 0 ? totalRevenueIncl / totalQuantity : 0,
-        number_of_orders: orders.length,
+        number_of_orders: ordersList.length,
       },
-      orders,
+      orders: ordersList,
+      truncated: false,
+    };
+  }
+
+  /**
+   * Helper pour créer des stats vides
+   */
+  private buildEmptyStats(
+    productId: number,
+    product: PrestashopProduct,
+    dateFrom: string,
+    dateTo: string
+  ): ProductSalesStats {
+    let productName = 'Unknown';
+    if (typeof product.name === 'string') {
+      productName = product.name;
+    } else if (Array.isArray(product.name) && product.name.length > 0) {
+      productName = product.name[0].value;
+    }
+
+    return {
+      product_id: productId,
+      product_name: productName,
+      product_reference: product.reference,
+      period: {
+        from: dateFrom,
+        to: dateTo,
+      },
+      sales: {
+        total_quantity_sold: 0,
+        total_revenue_excl_tax: 0,
+        total_revenue_incl_tax: 0,
+        average_unit_price: 0,
+        number_of_orders: 0,
+      },
+      orders: [],
       truncated: false,
     };
   }
 
   /**
    * Récupère les produits best-sellers
+   * OPTIMISÉ: Filtre les commandes par date d'abord, puis récupère les order_details
    */
   async getTopProducts(
     dateFrom: string,
     dateTo: string,
     limit: number,
-    sortBy: 'quantity' | 'revenue'
+    sortBy: 'quantity' | 'revenue',
+    orderStates?: number[]
   ): Promise<{ products: TopProduct[]; total_found: number }> {
     validateDateRange(dateFrom, dateTo);
 
-    // Récupérer TOUS les order_details de la période
-    const allOrderDetails = await this.apiService.getAllOrderDetails();
-
-    // Filtrer par date
-    const from = new Date(dateFrom);
-    const to = new Date(dateTo);
-    const filteredDetails = allOrderDetails.filter((detail) => {
-      const orderDate = new Date(detail.date_add);
-      return orderDate >= from && orderDate <= to;
+    // 1. Récupérer SEULEMENT les commandes de la période (OPTIMISATION)
+    const orders = await this.apiService.getAllOrders({
+      date_add: `[${dateFrom},${dateTo}]`,
+      current_state: orderStates,
     });
 
-    // Agréger par product_id
+    if (orders.length === 0) {
+      return { products: [], total_found: 0 };
+    }
+
+    // 2. Récupérer les order_details pour ces commandes par batch
+    const orderIds = orders.map((o) => o.id);
+    const allDetails: PrestashopOrderDetail[] = [];
+
+    // Traiter par batch de 20 commandes (évite les URLs trop longues)
+    const batchSize = 20;
+    for (let i = 0; i < orderIds.length; i += batchSize) {
+      const batch = orderIds.slice(i, i + batchSize);
+      const orderFilter = `[${batch.join('|')}]`; // Opérateur OR de PrestaShop
+
+      const details = await this.apiService.getAllOrderDetails({
+        id_order: orderFilter,
+      });
+
+      allDetails.push(...details);
+    }
+
+    // 3. Agréger par product_id
     const productMap = new Map<
       number,
       {
@@ -127,7 +200,7 @@ export class OrdersService {
       }
     >();
 
-    for (const detail of filteredDetails) {
+    for (const detail of allDetails) {
       const pid = detail.product_id;
       if (!productMap.has(pid)) {
         productMap.set(pid, {
@@ -142,12 +215,12 @@ export class OrdersService {
       const stats = productMap.get(pid);
       if (stats) {
         stats.quantity += detail.product_quantity;
-        stats.revenue += Number(detail.total_price_tax_incl);
+        stats.revenue += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
         stats.orders.add(detail.id_order);
       }
     }
 
-    // Convertir en array et trier
+    // 4. Convertir en array et trier
     const productsArray = Array.from(productMap.entries()).map(([id, stats]) => ({
       product_id: id,
       product_name: stats.name,

@@ -24,6 +24,15 @@ export const TopProductsInputSchema = z
       .default('quantity')
       .describe("Sort by: 'quantity' (units sold) or 'revenue' (total sales)"),
 
+    order_states: z
+      .array(z.number().int().positive())
+      .optional()
+      .describe(
+        'Filter by order states (e.g., [2, 3, 4, 5] for paid/processing/shipped/delivered). ' +
+        'If not provided, ALL order states are included. ' +
+        'Common states: 2=Payment accepted, 3=Processing, 4=Shipped, 5=Delivered, 6=Canceled, 7=Refunded'
+      ),
+
     response_format: responseFormatSchema,
   })
   .strict();

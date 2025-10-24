@@ -8,8 +8,15 @@ export default {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,
+      tsconfig: {
+        isolatedModules: true,
+      },
     }],
   },
+  testMatch: [
+    '**/tests/**/*.test.ts',
+    '**/__tests__/**/*.test.ts',
+  ],
   coverageThreshold: {
     global: {
       branches: 80,

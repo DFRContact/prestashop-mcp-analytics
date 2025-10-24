@@ -25,3 +25,12 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Test & Demo files (temporary analysis)
+demo-*.js
+test-*.js
+analyze-*.js
+compare-*.js
+investigate-*.js
+data_backoffice_prestashop/
+ORDER_STATES_ANALYSIS.md

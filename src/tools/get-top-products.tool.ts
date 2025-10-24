@@ -22,7 +22,8 @@ export async function getTopProductsTool(
       validated.date_from,
       validated.date_to,
       validated.limit,
-      validated.sort_by
+      validated.sort_by,
+      validated.order_states
     );
 
     const output: TopProductsResult = {
@@ -69,6 +70,7 @@ Args:
   - date_to (string): End date in YYYY-MM-DD format
   - limit (number): Number of products to return, 1-100 (default: 10)
   - sort_by ('quantity' | 'revenue'): Sort criterion (default: 'quantity')
+  - order_states (number[], optional): Filter by order states (e.g., [2, 3, 4, 5] for paid/processing/shipped/delivered). If not provided, ALL states are included.
   - response_format ('json' | 'markdown'): Output format (default: 'markdown')
 
 Returns:

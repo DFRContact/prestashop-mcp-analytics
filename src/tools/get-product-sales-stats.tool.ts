@@ -22,7 +22,8 @@ export async function getProductSalesStatsTool(
     const stats = await ordersService.getProductSalesStats(
       validated.product_id,
       validated.date_from,
-      validated.date_to
+      validated.date_to,
+      validated.order_states
     );
 
     // 3. Formater selon le format demandé
@@ -59,6 +60,7 @@ Args:
   - product_id (number): PrestaShop product ID (e.g., 42)
   - date_from (string): Start date in YYYY-MM-DD format (e.g., '2024-01-01')
   - date_to (string): End date in YYYY-MM-DD format (e.g., '2024-12-31')
+  - order_states (number[], optional): Filter by order states (e.g., [2, 3, 4, 5] for paid/processing/shipped/delivered). If not provided, ALL states are included.
   - response_format ('json' | 'markdown'): Output format (default: 'markdown')
 
 Returns:
