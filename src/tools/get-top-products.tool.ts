@@ -10,7 +10,7 @@ import {
   formatTopProductsMarkdown,
 } from '../formatters/index.js';
 import { TopProductsResult } from '../types.js';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { zodToMcpJsonSchema } from '../utils/schema.utils.js';
 
 export async function getTopProductsTool(
   ordersService: OrdersService,
@@ -95,7 +95,7 @@ Error Handling:
   - Truncates if response > 25,000 characters
 
 Note: This is a READ-ONLY tool. Maximum 100 products per request.`,
-  inputSchema: zodToJsonSchema(TopProductsInputSchema, 'TopProductsInput'),
+  inputSchema: zodToMcpJsonSchema(TopProductsInputSchema, 'TopProductsInput'),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,

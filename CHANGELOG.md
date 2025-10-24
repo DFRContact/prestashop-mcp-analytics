@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2025-01-24
+
+### Fixed
+- **Input Schema Format**: Convert JSON Schema to flat structure expected by MCP SDK
+  - MCP SDK requires `inputSchema` with flat structure: `{type: "object", properties: {...}, required: [...]}`
+  - Previous versions used `$ref` and `definitions` which Claude Desktop couldn't parse
+  - New `zodToMcpJsonSchema` utility recursively resolves all `$ref` references
+  - Removes `$schema`, `$ref`, and `definitions` from root level
+  - This is the definitive fix for the gray toggle issue in Claude Desktop
+
 ## [1.1.4] - 2025-01-24
 
 ### Fixed
