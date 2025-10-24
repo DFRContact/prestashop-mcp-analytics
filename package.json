@@ -1,11 +1,11 @@
 {
   "name": "prestashop-mcp-analytics",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MCP server for PrestaShop sales analytics",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "prestashop-mcp": "dist/index.js"
+    "prestashop-mcp-analytics": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
