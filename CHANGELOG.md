@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2025-01-24
+
+### Fixed
+- **Dependencies**: Move dotenv from dependencies to devDependencies
+  - Fixes "Unexpected token 'd', '[dotenv@17...'" error in Claude Desktop
+  - Environment variables are provided by MCP client, not loaded from .env file
+  - Reduces package size and prevents npm install messages on stdout
+
 ## [1.1.1] - 2025-01-24
 
 ### Fixed

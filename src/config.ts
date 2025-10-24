@@ -1,8 +1,7 @@
 import { z } from 'zod';
-import { config as dotenvConfig } from 'dotenv';
 
-// Load .env file
-dotenvConfig();
+// Environment variables are provided by the MCP client (Claude Desktop)
+// No need to load .env file in production
 
 const envSchema = z.object({
   PRESTASHOP_BASE_URL: z.string().url(),
