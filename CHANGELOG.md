@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2025-01-24
+
+### Fixed
+- **Tool Annotations**: Include annotations in tools/list response
+  - Adds readOnlyHint, destructiveHint, idempotentHint, and openWorldHint annotations
+  - Provides additional metadata for MCP clients to properly handle tools
+  - May resolve gray toggle issue in Claude Desktop
+
 ## [1.1.3] - 2025-01-24
 
 ### Fixed

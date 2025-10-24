@@ -49,11 +49,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: 'prestashop_get_product_sales_stats',
         description: getProductSalesStatsToolDefinition.description,
         inputSchema: getProductSalesStatsToolDefinition.inputSchema,
+        annotations: getProductSalesStatsToolDefinition.annotations,
       },
       {
         name: 'prestashop_get_top_products',
         description: getTopProductsToolDefinition.description,
         inputSchema: getTopProductsToolDefinition.inputSchema,
+        annotations: getTopProductsToolDefinition.annotations,
       },
     ],
   };
