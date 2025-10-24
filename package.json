@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/DFRContact/prestashop-mcp-analytics.git"
+    "url": "git+https://github.com/DFRContact/prestashop-mcp-analytics.git"
   },
   "homepage": "https://github.com/DFRContact/prestashop-mcp-analytics#readme",
   "bugs": {
