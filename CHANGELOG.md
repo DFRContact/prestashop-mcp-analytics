@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-01-24
+
+### Added
+- **Order States Filtering**: New optional `order_states` parameter for both MCP tools
+  - Filter statistics by specific PrestaShop order states (e.g., `[4, 5]` for Shipped + Delivered)
+  - Support for single or multiple states with OR logic
+  - Enables backoffice parity (excludes Processing and Refunded states)
+  - Comprehensive documentation of common PrestaShop states and recommended filters
+- Integration tests with real PrestaShop data validation
+- Environment variable support via dotenv
+- `.gitignore` entries for test/demo files
+
+### Fixed
+- **Backoffice Discrepancy**: Resolved +7 unit difference between API and PrestaShop backoffice
+  - Root cause: API included Processing (state 3) and Refunded (state 7) orders
+  - Solution: Use `order_states: [4, 5]` to match backoffice exactly
+- API service now supports array of states with pipe operator (`[1|2|3]` format)
+
+### Changed
+- Updated all schemas with optional `order_states` parameter
+- Enhanced tool descriptions with state filtering examples
+- Updated `OrderFilters` interface to accept `number | number[]`
+
+## [1.0.0] - 2025-01-15
+
 ### Added
 - Initial MCP PrestaShop Analytics Server implementation
 - Two MCP tools:

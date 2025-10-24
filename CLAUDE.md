@@ -122,9 +122,12 @@ Retrieves detailed sales statistics for a specific product over a date range.
   product_id: z.number().int().positive(),
   date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),  // YYYY-MM-DD
   date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  order_states: z.array(z.number().int().positive()).optional(),  // Filter by order states
   response_format: z.enum(['json', 'markdown']).default('markdown')
 }
 ```
+
+> **New in v1.1:** `order_states` parameter for flexible filtering by order status (e.g., `[4, 5]` for Shipped+Delivered)
 
 **Returns:**
 - Total quantity sold
@@ -149,9 +152,12 @@ Identifies best-selling products over a date range, sorted by quantity or revenu
   date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   limit: z.number().int().min(1).max(100).default(10),
   sort_by: z.enum(['quantity', 'revenue']).default('quantity'),
+  order_states: z.array(z.number().int().positive()).optional(),  // Filter by order states
   response_format: z.enum(['json', 'markdown']).default('markdown')
 }
 ```
+
+> **New in v1.1:** `order_states` parameter for flexible filtering by order status
 
 **Returns:**
 - Ranked list of products
@@ -163,6 +169,61 @@ Identifies best-selling products over a date range, sorted by quantity or revenu
 ```typescript
 { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
 ```
+
+## Order States Filtering (New in v1.1)
+
+Both tools now support filtering by order states to match specific business requirements:
+
+### Common PrestaShop Order States
+
+| Code | State Name | Description | Recommended for Stats |
+|------|------------|-------------|----------------------|
+| 1 | Awaiting check payment | Payment pending | ❌ No |
+| 2 | Payment accepted | Payment received | ✅ Yes |
+| 3 | Processing in progress | Being prepared | ⚠️ Optional |
+| 4 | Shipped | En route to customer | ✅ Yes |
+| 5 | Delivered | Received by customer | ✅ Yes |
+| 6 | Canceled | Order canceled | ❌ No |
+| 7 | Refunded | Money returned | ❌ No |
+| 8 | Payment error | Payment failed | ❌ No |
+
+### Usage Examples
+
+```typescript
+// Match PrestaShop backoffice statistics (excludes Processing + Refunded)
+{
+  product_id: 13557,
+  date_from: "2025-01-01",
+  date_to: "2025-01-31",
+  order_states: [4, 5]  // Shipped + Delivered only
+}
+
+// Include all "valid" orders (paid through delivered)
+{
+  product_id: 13557,
+  date_from: "2025-01-01",
+  date_to: "2025-01-31",
+  order_states: [2, 3, 4, 5]  // Payment accepted through Delivered
+}
+
+// All states (default behavior when parameter omitted)
+{
+  product_id: 13557,
+  date_from: "2025-01-01",
+  date_to: "2025-01-31"
+  // No order_states = includes ALL states
+}
+```
+
+### Backoffice Parity
+
+**Problem:** API may return different quantities than PrestaShop backoffice.
+
+**Solution:** PrestaShop backoffice typically excludes:
+- State 3 (Processing in progress)
+- State 7 (Refunded)
+
+To match backoffice exactly, use: `order_states: [4, 5]`
 
 ## Development Commands
 

@@ -14,6 +14,7 @@
 - 🎨 **Multiple Output Formats** - JSON for APIs, Markdown for humans
 - 🔒 **Secure & Read-Only** - No write operations, environment-based auth
 - ⚡ **Efficient Pagination** - Handles large datasets with automatic pagination
+- 🎯 **Order State Filtering** - Filter by order status for accurate reporting (NEW in v1.1)
 
 ## 📋 Prerequisites
 
@@ -104,6 +105,37 @@ Add to your `claude_desktop_config.json`:
 "What are my top 5 products this month?"
 "Show me top 10 products by revenue in Q4 2024"
 ```
+
+### 🎯 Order State Filtering (NEW in v1.1)
+
+Both tools support filtering by PrestaShop order states for precise reporting:
+
+**Match PrestaShop backoffice statistics:**
+```json
+{
+  "product_id": 42,
+  "date_from": "2025-01-01",
+  "date_to": "2025-01-31",
+  "order_states": [4, 5]
+}
+```
+
+**Common PrestaShop States:**
+- `1` - Awaiting check payment
+- `2` - Payment accepted
+- `3` - Processing in progress
+- `4` - Shipped
+- `5` - Delivered
+- `6` - Canceled
+- `7` - Refunded
+- `8` - Payment error
+
+**Recommended filters:**
+- **Backoffice parity**: `[4, 5]` (Shipped + Delivered only)
+- **All valid orders**: `[2, 3, 4, 5]` (Payment accepted through Delivered)
+- **All states**: Omit parameter (default behavior)
+
+> 💡 **Tip:** PrestaShop backoffice typically excludes Processing (3) and Refunded (7) states from statistics. Use `order_states: [4, 5]` to match exactly.
 
 ## 🧪 Development
 
