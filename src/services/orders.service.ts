@@ -1,5 +1,5 @@
 import { PrestashopApiService } from './prestashop-api.service.js';
-import { ProductSalesStats, TopProduct, OrderSummary } from '../types.js';
+import { ProductSalesStats, TopProduct, OrderSummary, PrestashopOrderDetail, PrestashopProduct } from '../types.js';
 import { validateDateRange } from '../utils/date.utils.js';
 import { safeParseFloat } from '../utils/validation.utils.js';
 
@@ -35,7 +35,7 @@ export class OrdersService {
 
     // 4. Récupérer les order_details pour ce produit dans ces commandes
     const orderIds = orders.map((o) => o.id);
-    const allDetails: typeof orders extends Array<infer T> ? any[] : never = [];
+    const allDetails: PrestashopOrderDetail[] = [];
 
     // Traiter par batch de 20 commandes (évite les URLs trop longues)
     const batchSize = 20;
@@ -58,7 +58,7 @@ export class OrdersService {
     const orderMap = new Map<number, OrderSummary>();
 
     for (const detail of allDetails) {
-      totalQuantity += Number(detail.product_quantity);
+      totalQuantity += detail.product_quantity;
       totalRevenueExcl += safeParseFloat(detail.total_price_tax_excl, 'total_price_tax_excl');
       totalRevenueIncl += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
 
@@ -66,14 +66,14 @@ export class OrdersService {
         orderMap.set(detail.id_order, {
           order_id: detail.id_order,
           date: detail.date_add,
-          quantity: Number(detail.product_quantity),
+          quantity: detail.product_quantity,
           unit_price: safeParseFloat(detail.unit_price_tax_incl, 'unit_price_tax_incl'),
           total_price: safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl'),
         });
       } else {
         const existing = orderMap.get(detail.id_order);
         if (existing) {
-          existing.quantity += Number(detail.product_quantity);
+          existing.quantity += detail.product_quantity;
           existing.total_price += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
         }
       }
@@ -117,7 +117,7 @@ export class OrdersService {
    */
   private buildEmptyStats(
     productId: number,
-    product: any,
+    product: PrestashopProduct,
     dateFrom: string,
     dateTo: string
   ): ProductSalesStats {
@@ -173,7 +173,7 @@ export class OrdersService {
 
     // 2. Récupérer les order_details pour ces commandes par batch
     const orderIds = orders.map((o) => o.id);
-    const allDetails: any[] = [];
+    const allDetails: PrestashopOrderDetail[] = [];
 
     // Traiter par batch de 20 commandes (évite les URLs trop longues)
     const batchSize = 20;
@@ -214,7 +214,7 @@ export class OrdersService {
 
       const stats = productMap.get(pid);
       if (stats) {
-        stats.quantity += Number(detail.product_quantity);
+        stats.quantity += detail.product_quantity;
         stats.revenue += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
         stats.orders.add(detail.id_order);
       }

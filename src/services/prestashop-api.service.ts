@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios from 'axios';
 import {
   PrestashopOrder,
   PrestashopOrderDetail,
