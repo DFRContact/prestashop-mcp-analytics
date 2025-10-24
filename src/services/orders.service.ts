@@ -2,6 +2,7 @@ import { PrestashopApiService } from './prestashop-api.service.js';
 import { ProductSalesStats, TopProduct, OrderSummary, PrestashopOrderDetail, PrestashopProduct } from '../types.js';
 import { validateDateRange } from '../utils/date.utils.js';
 import { safeParseFloat } from '../utils/validation.utils.js';
+import { BATCH_CONFIG } from '../constants.js';
 
 export class OrdersService {
   constructor(private apiService: PrestashopApiService) {}
@@ -37,18 +38,35 @@ export class OrdersService {
     const orderIds = orders.map((o) => o.id);
     const allDetails: PrestashopOrderDetail[] = [];
 
-    // Traiter par batch de 20 commandes (évite les URLs trop longues)
-    const batchSize = 20;
-    for (let i = 0; i < orderIds.length; i += batchSize) {
-      const batch = orderIds.slice(i, i + batchSize);
-      const orderFilter = `[${batch.join('|')}]`; // Opérateur OR de PrestaShop
+    // OPTIMISATION: Traitement parallèle avec contrôle de concurrence
+    const batchSize = BATCH_CONFIG.DEFAULT_BATCH_SIZE;
+    const maxConcurrent = BATCH_CONFIG.MAX_CONCURRENT_BATCHES;
 
-      const details = await this.apiService.getAllOrderDetails({
-        id_order: orderFilter,
-        product_id: productId,
+    // Créer tous les batches
+    const batches: number[][] = [];
+    for (let i = 0; i < orderIds.length; i += batchSize) {
+      batches.push(orderIds.slice(i, i + batchSize));
+    }
+
+    console.error(`[PERF] Processing ${String(orderIds.length)} orders in ${String(batches.length)} batches (size=${String(batchSize)}, concurrent=${String(maxConcurrent)})`);
+
+    // Traiter les batches en parallèle avec limite de concurrence
+    for (let i = 0; i < batches.length; i += maxConcurrent) {
+      const concurrentBatches = batches.slice(i, i + maxConcurrent);
+
+      // Exécuter jusqu'à maxConcurrent batches en parallèle
+      const promises = concurrentBatches.map(async (batch) => {
+        const orderFilter = `[${batch.join('|')}]`;
+        return this.apiService.getAllOrderDetails({
+          id_order: orderFilter,
+          product_id: productId,
+        });
       });
 
-      allDetails.push(...details);
+      const results = await Promise.all(promises);
+
+      // Aplatir les résultats
+      results.forEach((details) => allDetails.push(...details));
     }
 
     // 5. Agréger les stats
@@ -58,22 +76,28 @@ export class OrdersService {
     const orderMap = new Map<number, OrderSummary>();
 
     for (const detail of allDetails) {
-      totalQuantity += detail.product_quantity;
+      // Force numeric conversion - PrestaShop API returns strings despite TypeScript types
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+      const quantity = +detail.product_quantity;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+      const orderId = +detail.id_order;
+
+      totalQuantity += quantity;
       totalRevenueExcl += safeParseFloat(detail.total_price_tax_excl, 'total_price_tax_excl');
       totalRevenueIncl += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
 
-      if (!orderMap.has(detail.id_order)) {
-        orderMap.set(detail.id_order, {
-          order_id: detail.id_order,
+      if (!orderMap.has(orderId)) {
+        orderMap.set(orderId, {
+          order_id: orderId,
           date: detail.date_add,
-          quantity: detail.product_quantity,
+          quantity: quantity,
           unit_price: safeParseFloat(detail.unit_price_tax_incl, 'unit_price_tax_incl'),
           total_price: safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl'),
         });
       } else {
-        const existing = orderMap.get(detail.id_order);
+        const existing = orderMap.get(orderId);
         if (existing) {
-          existing.quantity += detail.product_quantity;
+          existing.quantity += quantity;
           existing.total_price += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
         }
       }
@@ -175,17 +199,34 @@ export class OrdersService {
     const orderIds = orders.map((o) => o.id);
     const allDetails: PrestashopOrderDetail[] = [];
 
-    // Traiter par batch de 20 commandes (évite les URLs trop longues)
-    const batchSize = 20;
-    for (let i = 0; i < orderIds.length; i += batchSize) {
-      const batch = orderIds.slice(i, i + batchSize);
-      const orderFilter = `[${batch.join('|')}]`; // Opérateur OR de PrestaShop
+    // OPTIMISATION: Traitement parallèle avec contrôle de concurrence
+    const batchSize = BATCH_CONFIG.DEFAULT_BATCH_SIZE;
+    const maxConcurrent = BATCH_CONFIG.MAX_CONCURRENT_BATCHES;
 
-      const details = await this.apiService.getAllOrderDetails({
-        id_order: orderFilter,
+    // Créer tous les batches
+    const batches: number[][] = [];
+    for (let i = 0; i < orderIds.length; i += batchSize) {
+      batches.push(orderIds.slice(i, i + batchSize));
+    }
+
+    console.error(`[PERF] Processing ${String(orderIds.length)} orders in ${String(batches.length)} batches (size=${String(batchSize)}, concurrent=${String(maxConcurrent)})`);
+
+    // Traiter les batches en parallèle avec limite de concurrence
+    for (let i = 0; i < batches.length; i += maxConcurrent) {
+      const concurrentBatches = batches.slice(i, i + maxConcurrent);
+
+      // Exécuter jusqu'à maxConcurrent batches en parallèle
+      const promises = concurrentBatches.map(async (batch) => {
+        const orderFilter = `[${batch.join('|')}]`;
+        return this.apiService.getAllOrderDetails({
+          id_order: orderFilter,
+        });
       });
 
-      allDetails.push(...details);
+      const results = await Promise.all(promises);
+
+      // Aplatir les résultats
+      results.forEach((details) => allDetails.push(...details));
     }
 
     // 3. Agréger par product_id
@@ -201,7 +242,14 @@ export class OrdersService {
     >();
 
     for (const detail of allDetails) {
-      const pid = detail.product_id;
+      // Force numeric conversion - PrestaShop API returns strings despite TypeScript types
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+      const pid = +detail.product_id;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+      const quantity = +detail.product_quantity;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+      const orderId = +detail.id_order;
+
       if (!productMap.has(pid)) {
         productMap.set(pid, {
           quantity: 0,
@@ -214,9 +262,9 @@ export class OrdersService {
 
       const stats = productMap.get(pid);
       if (stats) {
-        stats.quantity += detail.product_quantity;
+        stats.quantity += quantity;
         stats.revenue += safeParseFloat(detail.total_price_tax_incl, 'total_price_tax_incl');
-        stats.orders.add(detail.id_order);
+        stats.orders.add(orderId);
       }
     }
 
