@@ -1,7 +1,0 @@
-# PrestaShop Configuration
-PRESTASHOP_BASE_URL=https://your-prestashop-store.com
-PRESTASHOP_WS_KEY=YOUR_32_CHARACTER_WEBSERVICE_KEY_HERE
-
-# Environment
-NODE_ENV=development
-LOG_LEVEL=info
