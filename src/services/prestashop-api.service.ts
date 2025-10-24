@@ -9,12 +9,12 @@ import { REQUEST_TIMEOUT } from '../constants.js';
 
 export interface OrderFilters {
   date_add?: string; // Format: [date_from,date_to]
-  current_state?: number;
+  current_state?: number | number[]; // Single state or array of states
   id_customer?: number;
 }
 
 export interface OrderDetailFilters {
-  id_order?: number;
+  id_order?: number | string; // Can be number or string like "[1|2|3]" for OR filter
   product_id?: number;
 }
 
@@ -46,12 +46,16 @@ export class PrestashopApiService {
   /**
    * Récupère les commandes avec filtres optionnels
    */
-  async getOrders(filters: OrderFilters = {}): Promise<PrestashopOrder[]> {
+  async getOrders(
+    filters: OrderFilters = {},
+    limit = 100,
+    offset = 0
+  ): Promise<PrestashopOrder[]> {
     try {
       const params: Record<string, string> = {
         output_format: 'JSON',
-        display: 'full',
-        limit: '100',
+        display: '[id,id_customer,date_add,current_state,total_paid_tax_incl,total_paid_tax_excl]',
+        limit: offset > 0 ? `${String(offset)},${String(limit)}` : String(limit),
       };
 
       if (filters.date_add) {
@@ -60,7 +64,13 @@ export class PrestashopApiService {
       }
 
       if (filters.current_state) {
-        params['filter[current_state]'] = String(filters.current_state);
+        if (Array.isArray(filters.current_state)) {
+          // Multiple states: use [state1|state2|state3] format
+          params['filter[current_state]'] = `[${filters.current_state.join('|')}]`;
+        } else {
+          // Single state
+          params['filter[current_state]'] = String(filters.current_state);
+        }
       }
 
       if (filters.id_customer) {
@@ -92,6 +102,42 @@ export class PrestashopApiService {
   }
 
   /**
+   * Récupère toutes les commandes avec pagination automatique
+   */
+  async getAllOrders(filters: OrderFilters = {}): Promise<PrestashopOrder[]> {
+    const allOrders: PrestashopOrder[] = [];
+    let offset = 0;
+    const batchSize = 100;
+
+    // Safety limit: higher when date filter is used (more specific query)
+    // Without date filter: 10,000 max (all-time orders can be huge)
+    // With date filter: 50,000 max (single year should be reasonable)
+    const maxResults = filters.date_add ? 50000 : 10000;
+
+    for (;;) {
+      const batch = await this.getOrders(filters, batchSize, offset);
+
+      if (batch.length === 0) {
+        break;
+      }
+
+      allOrders.push(...batch);
+      offset += batchSize;
+
+      if (allOrders.length >= maxResults) {
+        console.warn(`Reached maximum of ${String(maxResults)} orders${filters.date_add ? ` for period ${filters.date_add}` : ''}`);
+        break;
+      }
+
+      if (batch.length < batchSize) {
+        break; // Last page
+      }
+    }
+
+    return allOrders;
+  }
+
+  /**
    * Récupère les détails de commande avec pagination
    */
   async getOrderDetails(
@@ -102,7 +148,7 @@ export class PrestashopApiService {
     try {
       const params: Record<string, string> = {
         output_format: 'JSON',
-        display: 'full',
+        display: '[id,id_order,product_id,product_name,product_reference,product_quantity,unit_price_tax_incl,unit_price_tax_excl,total_price_tax_incl,total_price_tax_excl]',
         limit: `${String(offset)},${String(limit)}`,
       };
 
@@ -143,7 +189,10 @@ export class PrestashopApiService {
   async getProduct(productId: number): Promise<PrestashopProduct> {
     try {
       const response = await axios.get<ApiProductResponse>(`${this.baseUrl}/products/${String(productId)}`, {
-        params: { output_format: 'JSON', display: 'full' },
+        params: {
+          output_format: 'JSON',
+          display: '[id,name,reference,active]'
+        },
         auth: { username: this.wsKey, password: '' },
         timeout: REQUEST_TIMEOUT,
       });
