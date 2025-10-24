@@ -19,9 +19,32 @@
     "format": "prettier --check src/**/*.ts",
     "format:fix": "prettier --write src/**/*.ts"
   },
-  "keywords": ["mcp", "prestashop", "analytics", "llm"],
-  "author": "Your Name",
+  "keywords": [
+    "mcp",
+    "prestashop",
+    "analytics",
+    "llm",
+    "model-context-protocol",
+    "sales-analytics",
+    "e-commerce",
+    "read-only",
+    "typescript"
+  ],
+  "author": "DFRContact <contact@drone-fpv-racer.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DFRContact/prestashop-mcp-analytics.git"
+  },
+  "homepage": "https://github.com/DFRContact/prestashop-mcp-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/DFRContact/prestashop-mcp-analytics/issues"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
     "axios": "^1.7.9",
