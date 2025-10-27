@@ -245,11 +245,14 @@ npm install -D eslint prettier @typescript-eslint/parser @typescript-eslint/esli
 
 ```json
 {
-  "name": "prestashop-mcp-analytics",
+  "name": "@dfr_contact/prestashop-mcp-analytics",
   "version": "1.0.0",
   "description": "MCP server for PrestaShop sales analytics",
   "type": "module",
   "main": "dist/index.js",
+  "publishConfig": {
+    "access": "restricted"
+  },
   "bin": {
     "prestashop-mcp": "dist/index.js"
   },
@@ -527,7 +530,7 @@ export const config = {
     timeout: 30000,
   },
   mcp: {
-    name: 'prestashop-mcp-analytics',
+    name: '@dfr_contact/prestashop-mcp-analytics',
     version: '1.0.0',
   },
   limits: {

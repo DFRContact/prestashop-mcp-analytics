@@ -33,7 +33,7 @@ export const config = {
     timeout: 30000,
   },
   mcp: {
-    name: 'prestashop-mcp-analytics',
+    name: '@dfr_contact/prestashop-mcp-analytics',
     version: '1.2.0',
   },
   limits: {

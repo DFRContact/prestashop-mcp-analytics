@@ -517,5 +517,5 @@ console.error(`[PERF] Completed in ${executionTimeMs}ms (${apiCalls} API calls, 
 
 **Document Version**: 1.0
 **Date**: 2025-01-24
-**Author**: Performance Analysis for prestashop-mcp-analytics
+**Author**: Performance Analysis for @dfr_contact/prestashop-mcp-analytics
 **Related Issue**: API call methodology optimization

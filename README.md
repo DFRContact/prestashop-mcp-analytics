@@ -24,7 +24,13 @@
 
 ## 🚀 Installation
 
-### 1. Clone and Install
+### 1. Install from npm
+
+```bash
+npm install @dfr_contact/prestashop-mcp-analytics
+```
+
+Or clone and install for development:
 
 ```bash
 git clone <repository-url>
@@ -81,8 +87,25 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "prestashop-analytics": {
+      "command": "npx",
+      "args": ["-y", "@dfr_contact/prestashop-mcp-analytics"],
+      "env": {
+        "PRESTASHOP_BASE_URL": "https://your-store.com",
+        "PRESTASHOP_WS_KEY": "your_32_character_key_here"
+      }
+    }
+  }
+}
+```
+
+Or if installed globally:
+
+```json
+{
+  "mcpServers": {
+    "prestashop-analytics": {
       "command": "node",
-      "args": ["/absolute/path/to/prestashop-mcp-analytics/dist/index.js"],
+      "args": ["/absolute/path/to/node_modules/@dfr_contact/prestashop-mcp-analytics/dist/index.js"],
       "env": {
         "PRESTASHOP_BASE_URL": "https://your-store.com",
         "PRESTASHOP_WS_KEY": "your_32_character_key_here"

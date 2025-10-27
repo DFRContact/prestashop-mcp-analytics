@@ -16,10 +16,10 @@ Check which version Claude Desktop is using:
 
 ```bash
 # In your MCP config, if using npx, the version should be updated automatically
-npx -y prestashop-mcp-analytics@latest
+npx -y @dfr_contact/prestashop-mcp-analytics@latest
 
 # Or check installed version
-npm list -g prestashop-mcp-analytics
+npm list -g @dfr_contact/prestashop-mcp-analytics
 ```
 
 **Expected:** Version 1.1.4 or later
@@ -39,7 +39,7 @@ Location:
       "command": "npx",
       "args": [
         "-y",
-        "prestashop-mcp-analytics@latest"
+        "@dfr_contact/prestashop-mcp-analytics@latest"
       ],
       "env": {
         "PRESTASHOP_BASE_URL": "https://your-store.com",
@@ -51,7 +51,7 @@ Location:
 ```
 
 **Common mistakes:**
-- ❌ Using `prestashop-mcp-analytics` instead of `prestashop-mcp-analytics@latest`
+- ❌ Using `@dfr_contact/prestashop-mcp-analytics` instead of `@dfr_contact/prestashop-mcp-analytics@latest`
 - ❌ Missing `@latest` suffix (keeps using old cached version)
 - ❌ Wrong command name (should be `npx`, not `node`)
 - ❌ Invalid environment variables
@@ -119,7 +119,7 @@ Run the server directly to check for errors:
 cd /path/to/your/project
 PRESTASHOP_BASE_URL=https://your-store.com \
 PRESTASHOP_WS_KEY=YOUR_KEY_HERE \
-npx -y prestashop-mcp-analytics@latest
+npx -y @dfr_contact/prestashop-mcp-analytics@latest
 ```
 
 **Expected output:**
@@ -176,7 +176,7 @@ curl -u "YOUR_WS_KEY:" "https://your-store.com/api?output_format=JSON"
 #### Toggle Gray + Tools Listed in Logs
 → Schema format issue
 - Verify `$schema` and `annotations` present in logs (step 4)
-- Update to v1.1.4: `npx -y prestashop-mcp-analytics@latest`
+- Update to v1.1.4: `npx -y @dfr_contact/prestashop-mcp-analytics@latest`
 - Clear cache (step 3)
 
 #### Tools Appear but Can't Activate
@@ -203,7 +203,7 @@ curl -u "YOUR_WS_KEY:" "https://your-store.com/api?output_format=JSON"
      "mcpServers": {
        "test-only-prestashop": {
          "command": "npx",
-         "args": ["-y", "prestashop-mcp-analytics@1.1.4"],
+         "args": ["-y", "@dfr_contact/prestashop-mcp-analytics@1.1.4"],
          "env": {
            "PRESTASHOP_BASE_URL": "https://demo.prestashop.com",
            "PRESTASHOP_WS_KEY": "YOUR_KEY"
@@ -231,7 +231,7 @@ curl -u "YOUR_WS_KEY:" "https://your-store.com/api?output_format=JSON"
 
 ### Quick Fix Checklist
 
-- [ ] Using `prestashop-mcp-analytics@latest` in config
+- [ ] Using `@dfr_contact/prestashop-mcp-analytics@latest` in config
 - [ ] Completely quit and restarted Claude Desktop
 - [ ] Cleared npx cache
 - [ ] Verified environment variables are correct
@@ -242,4 +242,4 @@ curl -u "YOUR_WS_KEY:" "https://your-store.com/api?output_format=JSON"
 - [ ] No other MCP servers causing conflicts
 
 If all checked and still not working, please open an issue at:
-https://github.com/DFRContact/prestashop-mcp-analytics/issues
+https://github.com/DFRContact/@dfr_contact/prestashop-mcp-analytics/issues

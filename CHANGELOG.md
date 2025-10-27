@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Package Scope**: Package renamed from `prestashop-mcp-analytics` to `@dfr_contact/prestashop-mcp-analytics`
+  - Now published as private scoped package on npm
+  - Requires npm paid account for access
+  - Installation: `npm install @dfr_contact/prestashop-mcp-analytics`
+  - Updated all documentation and examples with new package name
+
 ## [1.2.0] - 2025-01-24
 
 ### Performance
