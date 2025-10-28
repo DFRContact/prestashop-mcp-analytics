@@ -228,16 +228,16 @@ export class PrestashopApiService {
   }
 
   /**
-   * Recherche des produits par nom (multi-langues)
+   * Recherche des produits par nom (multi-langues) avec pagination automatique
    * PrestaShop stocke les noms par langue, donc on récupère et filtre côté serveur
    *
-   * Performance: ~200-250ms pour 500 produits sur PrestaShop 1.7
+   * Performance: ~200ms-2s selon le nombre de produits actifs
    *
    * @param searchTerm Terme de recherche (case-insensitive, partial match)
    * @param limit Nombre maximum de résultats à retourner (default: 50)
-   * @param maxFetch Nombre maximum de produits à récupérer de l'API (default: 500)
+   * @param maxScan Nombre maximum de produits à scanner (default: 5000, safety limit)
    */
-  async searchProducts(searchTerm: string, limit = 50, maxFetch = 500): Promise<PrestashopProduct[]> {
+  async searchProducts(searchTerm: string, limit = 50, maxScan = 5000): Promise<PrestashopProduct[]> {
     const startTime = Date.now();
 
     try {
@@ -249,47 +249,75 @@ export class PrestashopApiService {
       // Normaliser le terme de recherche (minuscules, trim)
       const searchLower = searchTerm.toLowerCase().trim();
 
-      // Optimisation: réduire maxFetch si on cherche peu de résultats
-      const optimizedLimit = limit <= 10 ? Math.min(maxFetch, 300) : maxFetch;
+      // Pagination automatique pour scanner TOUS les produits actifs
+      let offset = 0;
+      const batchSize = 100;
+      const allProducts: PrestashopProduct[] = [];
+      const matchingProducts: PrestashopProduct[] = [];
 
-      // Récupérer les produits actifs
-      const params: Record<string, string> = {
-        output_format: 'JSON',
-        display: '[id,name,reference,active]', // Minimal fields for performance
-        limit: String(optimizedLimit),
-        'filter[active]': '1', // Active products only
-      };
-
-      const response = await axios.get<{ products?: ApiProductResponse | ApiProductResponse[] }>(`${this.baseUrl}/products`, {
-        params,
-        auth: { username: this.wsKey, password: '' },
-        timeout: REQUEST_TIMEOUT,
-      });
-
-      if (!response.data.products) {
-        return [];
-      }
-
-      const products = Array.isArray(response.data.products)
-        ? response.data.products
-        : [response.data.products];
-
-      const allProducts = products.map((p: ApiProductResponse) => p.product || (p as unknown as PrestashopProduct));
-
-      // Filtrer par nom côté serveur (in-memory filtering is instant: ~0-1ms)
-      const matchingProducts = allProducts.filter((product) => {
-        // Le nom peut être un string ou un objet multi-langues
-        if (typeof product.name === 'string') {
-          return product.name.toLowerCase().includes(searchLower);
-        } else if (Array.isArray(product.name)) {
-          // Format multi-langues : [{id: '1', value: 'Name EN'}, {id: '2', value: 'Name FR'}]
-          return product.name.some((lang: { id?: string; value?: string }) =>
-            typeof lang.value === 'string' && lang.value.toLowerCase().includes(searchLower)
-          );
+      for (;;) {
+        // Safety limit
+        if (allProducts.length >= maxScan) {
+          console.warn(`[searchProducts] Reached max scan limit of ${String(maxScan)} products`);
+          break;
         }
-        // Autre format possible : objet avec clés dynamiques
-        return false;
-      });
+
+        // Fetch batch
+        const params: Record<string, string> = {
+          output_format: 'JSON',
+          display: '[id,name,reference,active]',
+          limit: `${String(offset)},${String(batchSize)}`,
+          'filter[active]': '1',
+        };
+
+        const response = await axios.get<{ products?: ApiProductResponse | ApiProductResponse[] }>(`${this.baseUrl}/products`, {
+          params,
+          auth: { username: this.wsKey, password: '' },
+          timeout: REQUEST_TIMEOUT,
+        });
+
+        if (!response.data.products) {
+          break;
+        }
+
+        const products = Array.isArray(response.data.products)
+          ? response.data.products
+          : [response.data.products];
+
+        const batch = products.map((p: ApiProductResponse) => p.product || (p as unknown as PrestashopProduct));
+
+        if (batch.length === 0) {
+          break;
+        }
+
+        allProducts.push(...batch);
+
+        // Filter matches in this batch
+        const batchMatches = batch.filter((product) => {
+          if (typeof product.name === 'string') {
+            return product.name.toLowerCase().includes(searchLower);
+          } else if (Array.isArray(product.name)) {
+            return product.name.some((lang: { id?: string; value?: string }) =>
+              typeof lang.value === 'string' && lang.value.toLowerCase().includes(searchLower)
+            );
+          }
+          return false;
+        });
+
+        matchingProducts.push(...batchMatches);
+
+        // Early exit if we have enough results
+        if (matchingProducts.length >= limit) {
+          break;
+        }
+
+        // Last batch reached
+        if (batch.length < batchSize) {
+          break;
+        }
+
+        offset += batchSize;
+      }
 
       const elapsed = Date.now() - startTime;
 

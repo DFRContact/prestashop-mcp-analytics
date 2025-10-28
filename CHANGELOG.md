@@ -7,12 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2025-01-28
+
+### Fixed
+- **Critical: Product Search Pagination Bug**: Fixed `searchProducts()` method not finding products with high IDs
+  - **Root Cause**: Original implementation limited product scanning to 500 products (lines 240-275)
+  - **Impact**: Products with IDs > 500 (e.g., "DJI O4 Air Unit Pro" - ID 13557) were unreachable via name search
+  - **Solution**: Implemented full pagination to scan ALL active products in batches of 100
+  - **Performance**: Maintains fast search (~200ms-2s depending on catalog size)
+  - **Safety**: Added 5000 product scan limit to prevent excessive API calls
+  - **Early Exit**: Stops scanning once enough matching results found (optimization)
+  - **Validation**: All 22 integration tests pass, including new pagination tests
+
+## [1.3.0] - 2025-01-27
+
 ### Added
 - **Product Search by Name**: New `product_name` parameter for `prestashop_get_product_sales_stats` tool
   - Search products using natural language (e.g., "DJI Camera", "Motor", "Condensateur Panasonic")
   - Case-insensitive partial matching across all product names
   - Multi-language support (searches in all configured languages)
-  - Optimized performance: ~200-350ms for 500 products on PrestaShop 1.7
+  - Optimized performance: ~200-350ms for standard searches on PrestaShop 1.7
   - Smart result handling:
     - 0 results: Returns helpful error message with suggestions
     - 1 result: Automatically uses the found product
@@ -27,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Requires npm paid account for access
   - Installation: `npm install @dfr_contact/prestashop-mcp-analytics`
   - Updated all documentation and examples with new package name
+
+### Known Issues
+- ⚠️ Version 1.3.0 contains pagination bug (fixed in 1.3.1) - products with high IDs cannot be found
 
 ## [1.2.0] - 2025-01-24
 
