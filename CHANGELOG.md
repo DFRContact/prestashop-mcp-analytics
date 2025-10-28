@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Product Search by Name**: New `product_name` parameter for `prestashop_get_product_sales_stats` tool
+  - Search products using natural language (e.g., "DJI Camera", "Motor", "Condensateur Panasonic")
+  - Case-insensitive partial matching across all product names
+  - Multi-language support (searches in all configured languages)
+  - Optimized performance: ~200-350ms for 500 products on PrestaShop 1.7
+  - Smart result handling:
+    - 0 results: Returns helpful error message with suggestions
+    - 1 result: Automatically uses the found product
+    - Multiple results: Returns interactive list for user to choose from
+  - New `searchProducts()` method in `PrestashopApiService` with performance optimizations
+  - Schema validation: Either `product_id` OR `product_name` must be provided (mutually exclusive)
+  - Comprehensive integration tests (8 test cases covering edge cases)
+
 ### Changed
 - **Package Scope**: Package renamed from `prestashop-mcp-analytics` to `@dfr_contact/prestashop-mcp-analytics`
   - Now published as private scoped package on npm

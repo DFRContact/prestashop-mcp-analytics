@@ -46,6 +46,7 @@ When implementing features, follow this order:
 
 Enable e-commerce managers, business analysts, and store owners to query their PrestaShop sales data conversationally through LLM interfaces. The server provides:
 - Product sales statistics over custom date ranges
+- **Product search by name** (natural language queries) - NEW in v1.3
 - Best-seller identification by quantity or revenue
 - Detailed order-level data with aggregations
 - Multi-format responses (JSON/Markdown)
@@ -119,14 +120,18 @@ Retrieves detailed sales statistics for a specific product over a date range.
 **Parameters (Zod Schema):**
 ```typescript
 {
-  product_id: z.number().int().positive(),
+  product_id: z.number().int().positive().optional(),  // Required if product_name not provided
+  product_name: z.string().min(2).max(255).optional(),  // Required if product_id not provided
   date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),  // YYYY-MM-DD
   date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   order_states: z.array(z.number().int().positive()).optional(),  // Filter by order states
   response_format: z.enum(['json', 'markdown']).default('markdown')
 }
+// With validation: Either product_id OR product_name must be provided
 ```
 
+> **New in v1.3:** `product_name` parameter for natural language product search (case-insensitive, partial match, multi-language)
+>
 > **New in v1.1:** `order_states` parameter for flexible filtering by order status (e.g., `[4, 5]` for Shipped+Delivered)
 
 **Returns:**
@@ -547,17 +552,24 @@ Only allow HTTP methods: `GET`, `HEAD`
 
 ## Common User Questions (Examples)
 
-**Simple:**
+**Simple (by ID):**
 - "How many units of product ID 42 were sold this month?"
 - "Show me my top 5 products this week"
+
+**Simple (by name - NEW in v1.3):**
+- "How many 'DJI O4 Air Unit' were sold this month?"
+- "Show me sales for 'Condensateur Panasonic' last week"
+- "What are the stats for products with 'motor' in the name?"
 
 **Intermediate:**
 - "Compare sales of product 15 between January and February"
 - "What are my top 20 best-sellers for the quarter?"
+- "Show me revenue for 'T-Motor F80' this quarter"
 
 **Complex:**
 - "Analyze sales of product X for the entire year with order details"
 - "Which products generated more than €10,000 in Q3?"
+- "Compare sales of 'DJI Camera' vs product #123 in Q4"
 
 ## Code Quality Standards
 

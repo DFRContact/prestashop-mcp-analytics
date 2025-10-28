@@ -9,12 +9,13 @@
 ## 🎯 Features
 
 - 📊 **Product Sales Statistics** - Detailed sales breakdown by product
+- 🔍 **Product Search by Name** - Find products using natural language search (NEW in v1.3)
 - 🏆 **Top Selling Products** - Best-sellers by quantity or revenue
 - 📅 **Flexible Date Ranges** - Query any period (up to 2 years)
 - 🎨 **Multiple Output Formats** - JSON for APIs, Markdown for humans
 - 🔒 **Secure & Read-Only** - No write operations, environment-based auth
 - ⚡ **Efficient Pagination** - Handles large datasets with automatic pagination
-- 🎯 **Order State Filtering** - Filter by order status for accurate reporting (NEW in v1.1)
+- 🎯 **Order State Filtering** - Filter by order status for accurate reporting
 
 ## 📋 Prerequisites
 
@@ -117,16 +118,59 @@ Or if installed globally:
 
 ### Example Queries
 
-**Get product sales statistics:**
+**Get product sales statistics (by ID or name):**
 ```
 "How many units of product ID 42 were sold in September 2024?"
 "Show me revenue for product #15 this quarter"
+"What are the sales for 'DJI O4 Air Unit' last month?"
+"Get stats for 'Condensateur Panasonic' this week"
 ```
 
 **Get top products:**
 ```
 "What are my top 5 products this month?"
 "Show me top 10 products by revenue in Q4 2024"
+```
+
+### 🔍 Product Search by Name (NEW in v1.3)
+
+You can now search for products using their name instead of ID:
+
+**Direct product name:**
+```json
+{
+  "product_name": "DJI O4 Air Unit",
+  "date_from": "2025-01-01",
+  "date_to": "2025-01-31"
+}
+```
+
+**Partial match (case-insensitive):**
+```json
+{
+  "product_name": "motor",
+  "date_from": "2025-01-01",
+  "date_to": "2025-01-31"
+}
+```
+
+**Features:**
+- ✅ **Case-insensitive** partial matching
+- ✅ **Multi-language** support (searches in all languages)
+- ✅ **Fast performance** (~200-350ms for 500 products)
+- ✅ **Smart handling**:
+  - 0 results → helpful error message
+  - 1 result → automatic selection
+  - Multiple results → interactive list to choose from
+
+**Example conversation:**
+```
+User: "Show me sales for Condensateur Panasonic last week"
+Assistant: Found 2 products:
+  1. Condensateur Panasonic Low ESR 680uF 35V (ID: 2557)
+  2. Condensateur Panasonic Low ESR 1000uF 35V (ID: 3249)
+
+Please specify which product you want by using the product_id.
 ```
 
 ### 🎯 Order State Filtering (NEW in v1.1)

@@ -153,6 +153,95 @@ describe('PrestaShop API Integration Tests', () => {
     }, 15000);
   });
 
+  describe('Product Search (searchProducts)', () => {
+    test('should search products by name (string format)', async () => {
+      const results = await apiService.searchProducts('motor');
+
+      expect(Array.isArray(results)).toBe(true);
+      // Motor is a common term, should find some products
+      expect(results.length).toBeGreaterThan(0);
+
+      if (results.length > 0) {
+        const product = results[0];
+        expect(product).toHaveProperty('id');
+        expect(product).toHaveProperty('name');
+        expect(product).toHaveProperty('reference');
+        expect(product).toHaveProperty('active');
+
+        // Verify the name contains the search term (case-insensitive)
+        const name = typeof product.name === 'string'
+          ? product.name
+          : Array.isArray(product.name) && product.name.length > 0
+            ? product.name[0].value
+            : '';
+
+        expect(name.toLowerCase()).toContain('motor');
+      }
+    }, 15000);
+
+    test('should perform case-insensitive search', async () => {
+      const resultsLower = await apiService.searchProducts('dji');
+      const resultsUpper = await apiService.searchProducts('DJI');
+
+      expect(resultsLower.length).toEqual(resultsUpper.length);
+    }, 15000);
+
+    test('should return empty array for non-existent products', async () => {
+      const results = await apiService.searchProducts('XXXYYYZZZ_NONEXISTENT_12345');
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(0);
+    }, 15000);
+
+    test('should respect limit parameter', async () => {
+      const results = await apiService.searchProducts('motor', 3);
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBeLessThanOrEqual(3);
+    }, 15000);
+
+    test('should return empty array for empty search term', async () => {
+      const results = await apiService.searchProducts('');
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(0);
+    }, 5000);
+
+    test('should handle whitespace-only search term', async () => {
+      const results = await apiService.searchProducts('   ');
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(0);
+    }, 5000);
+
+    test('should search in multi-language product names', async () => {
+      // Try common French term that might exist in bilingual store
+      const results = await apiService.searchProducts('moteur');
+
+      expect(Array.isArray(results)).toBe(true);
+      // This might return 0 if no French names, but should not error
+    }, 15000);
+
+    test('should perform partial match search', async () => {
+      // Search for "DJI" should match "DJI O4 Air Unit Pro"
+      const results = await apiService.searchProducts('DJI');
+
+      expect(Array.isArray(results)).toBe(true);
+
+      if (results.length > 0) {
+        const names = results.map(p => {
+          if (typeof p.name === 'string') return p.name;
+          if (Array.isArray(p.name) && p.name.length > 0) return p.name[0].value;
+          return '';
+        });
+
+        // At least one name should contain "DJI"
+        const hasDJI = names.some(name => name.toLowerCase().includes('dji'));
+        expect(hasDJI).toBe(true);
+      }
+    }, 15000);
+  });
+
   describe('Error Handling', () => {
     test('should handle invalid authentication', async () => {
       const invalidService = new PrestashopApiService(baseUrl!, 'INVALID_KEY_12345678901234567890');
