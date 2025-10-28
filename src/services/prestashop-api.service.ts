@@ -228,6 +228,68 @@ export class PrestashopApiService {
   }
 
   /**
+   * Recherche des produits par nom (multi-langues)
+   * PrestaShop stocke les noms par langue, donc on récupère et filtre côté serveur
+   */
+  async searchProducts(searchTerm: string, limit = 50): Promise<PrestashopProduct[]> {
+    try {
+      // Normaliser le terme de recherche (minuscules, trim)
+      const searchLower = searchTerm.toLowerCase().trim();
+
+      // Récupérer les produits actifs (on limite à 500 pour la performance)
+      const params: Record<string, string> = {
+        output_format: 'JSON',
+        display: '[id,name,reference,active]',
+        limit: '500', // Récupérer un large échantillon
+        'filter[active]': '1', // Seulement les produits actifs
+      };
+
+      const response = await axios.get<{ products?: ApiProductResponse | ApiProductResponse[] }>(`${this.baseUrl}/products`, {
+        params,
+        auth: { username: this.wsKey, password: '' },
+        timeout: REQUEST_TIMEOUT,
+      });
+
+      if (!response.data.products) {
+        return [];
+      }
+
+      const products = Array.isArray(response.data.products)
+        ? response.data.products
+        : [response.data.products];
+
+      const allProducts = products.map((p: ApiProductResponse) => p.product || (p as unknown as PrestashopProduct));
+
+      // Filtrer par nom côté serveur
+      const matchingProducts = allProducts.filter((product) => {
+        // Le nom peut être un string ou un objet multi-langues
+        if (typeof product.name === 'string') {
+          return product.name.toLowerCase().includes(searchLower);
+        } else if (Array.isArray(product.name)) {
+          // Format multi-langues : [{id: '1', value: 'Name EN'}, {id: '2', value: 'Name FR'}]
+          return product.name.some((lang: any) =>
+            lang.value && lang.value.toLowerCase().includes(searchLower)
+          );
+        } else if (typeof product.name === 'object' && product.name !== null) {
+          // Autre format possible
+          return Object.values(product.name).some((val: any) =>
+            typeof val === 'string' && val.toLowerCase().includes(searchLower)
+          );
+        }
+        return false;
+      });
+
+      // Limiter les résultats
+      return matchingProducts.slice(0, limit);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return []; // Aucun produit trouvé
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Fetch all order details avec pagination automatique
    */
   async getAllOrderDetails(

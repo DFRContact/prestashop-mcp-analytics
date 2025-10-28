@@ -7,7 +7,15 @@ export const ProductSalesStatsInputSchema = z
       .number()
       .int('Product ID must be an integer')
       .positive('Product ID must be positive')
-      .describe('PrestaShop product ID (e.g., 42)'),
+      .optional()
+      .describe('PrestaShop product ID (e.g., 42). Required if product_name is not provided.'),
+
+    product_name: z
+      .string()
+      .min(2, 'Product name must be at least 2 characters')
+      .max(255, 'Product name must not exceed 255 characters')
+      .optional()
+      .describe('Product name to search for (e.g., "KAYOUMINI"). Required if product_id is not provided. Case-insensitive partial match.'),
 
     date_from: dateSchema.describe("Start date of the period (e.g., '2024-01-01')"),
 
@@ -24,6 +32,13 @@ export const ProductSalesStatsInputSchema = z
 
     response_format: responseFormatSchema,
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => data.product_id !== undefined || data.product_name !== undefined,
+    {
+      message: 'Either product_id or product_name must be provided',
+      path: ['product_id'],
+    }
+  );
 
 export type ProductSalesStatsInput = z.infer<typeof ProductSalesStatsInputSchema>;
