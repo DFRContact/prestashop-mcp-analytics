@@ -283,15 +283,11 @@ export class PrestashopApiService {
           return product.name.toLowerCase().includes(searchLower);
         } else if (Array.isArray(product.name)) {
           // Format multi-langues : [{id: '1', value: 'Name EN'}, {id: '2', value: 'Name FR'}]
-          return product.name.some((lang: any) =>
-            lang.value && lang.value.toLowerCase().includes(searchLower)
-          );
-        } else if (typeof product.name === 'object' && product.name !== null) {
-          // Autre format possible
-          return Object.values(product.name).some((val: any) =>
-            typeof val === 'string' && val.toLowerCase().includes(searchLower)
+          return product.name.some((lang: { id?: string; value?: string }) =>
+            typeof lang.value === 'string' && lang.value.toLowerCase().includes(searchLower)
           );
         }
+        // Autre format possible : objet avec clés dynamiques
         return false;
       });
 
@@ -299,7 +295,7 @@ export class PrestashopApiService {
 
       // Log de performance (stderr pour ne pas polluer stdout)
       if (process.env.LOG_LEVEL === 'debug') {
-        console.error(`[searchProducts] Found ${matchingProducts.length} matches in ${elapsed}ms (scanned ${allProducts.length} products)`);
+        console.error(`[searchProducts] Found ${String(matchingProducts.length)} matches in ${String(elapsed)}ms (scanned ${String(allProducts.length)} products)`);
       }
 
       // Limiter les résultats

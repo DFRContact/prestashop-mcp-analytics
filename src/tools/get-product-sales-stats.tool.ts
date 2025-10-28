@@ -28,6 +28,7 @@ export async function getProductSalesStatsTool(
       productId = validated.product_id;
     } else if (validated.product_name !== undefined) {
       // Cas recherche : chercher le produit par nom
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       const apiService = (ordersService as any).apiService as PrestashopApiService;
       const products = await apiService.searchProducts(validated.product_name);
 
@@ -52,14 +53,13 @@ export async function getProductSalesStatsTool(
               displayName = p.name;
             } else if (Array.isArray(p.name) && p.name.length > 0) {
               // Prendre la première langue disponible
-              displayName = p.name[0].value || 'Unknown';
-            } else if (typeof p.name === 'object' && p.name !== null) {
-              const values = Object.values(p.name);
-              if (values.length > 0) {
-                displayName = String(values[0]);
+              const firstLang = p.name[0];
+              if (typeof firstLang === 'object' && 'value' in firstLang) {
+                const langValue = firstLang.value;
+                displayName = (typeof langValue === 'string' ? langValue : 'Unknown');
               }
             }
-            return `- **ID ${p.id}**: ${displayName} (Ref: ${p.reference})`;
+            return `- **ID ${String(p.id)}**: ${displayName} (Ref: ${p.reference || 'N/A'})`;
           })
           .join('\n');
 
@@ -67,7 +67,7 @@ export async function getProductSalesStatsTool(
           content: [
             {
               type: 'text',
-              text: `🔍 Found ${products.length} products matching "${validated.product_name}":\n\n${productList}\n\n💡 Please specify the exact product using **product_id** instead of product_name.`,
+              text: `🔍 Found ${String(products.length)} products matching "${validated.product_name}":\n\n${productList}\n\n💡 Please specify the exact product using **product_id** instead of product_name.`,
             },
           ],
         };
@@ -82,10 +82,14 @@ export async function getProductSalesStatsTool(
       if (typeof product.name === 'string') {
         displayName = product.name;
       } else if (Array.isArray(product.name) && product.name.length > 0) {
-        displayName = product.name[0].value || 'Unknown';
+        const firstLang = product.name[0];
+        if (typeof firstLang === 'object' && 'value' in firstLang) {
+          const langValue = firstLang.value;
+          displayName = (typeof langValue === 'string' ? langValue : 'Unknown');
+        }
       }
 
-      console.error(`✓ Found product: ${displayName} (ID: ${productId})`);
+      console.error(`✓ Found product: ${displayName} (ID: ${String(productId)})`);
     } else {
       // Ne devrait jamais arriver grâce à la validation Zod
       throw new Error('Either product_id or product_name must be provided');
